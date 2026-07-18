@@ -1,0 +1,226 @@
+/* ===== 全体 ===== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f7f4ee;
+  --card: #ffffff;
+  --ink: #2b2a26;
+  --sub: #6f6a5e;
+  --accent: #b3552e;
+  --accent-soft: #f3e2d6;
+  --line: #e5dfd2;
+}
+
+body {
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.8;
+  padding: 24px 16px 60px;
+}
+
+header {
+  max-width: 860px;
+  margin: 0 auto 28px;
+  text-align: center;
+}
+
+h1 { font-size: 1.9rem; margin-bottom: 6px; }
+.subtitle { color: var(--sub); font-size: 0.95rem; margin-bottom: 20px; }
+
+.input-area {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+#birthdate {
+  font-size: 1.1rem;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+}
+
+#calc-btn {
+  font-size: 1.05rem;
+  padding: 10px 26px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+#calc-btn:hover { opacity: 0.88; }
+
+.error { color: #c0392b; margin-top: 12px; }
+.hidden { display: none; }
+
+/* ===== カード ===== */
+main {
+  max-width: 860px;
+  margin: 0 auto;
+  display: grid;
+  gap: 18px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 22px 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.card h2 {
+  font-size: 1.15rem;
+  margin-bottom: 12px;
+  border-bottom: 2px solid var(--accent-soft);
+  padding-bottom: 8px;
+}
+
+.tag {
+  font-size: 0.75rem;
+  font-weight: normal;
+  color: var(--sub);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 2px 10px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* ===== 中身の部品 ===== */
+.big {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--accent);
+}
+
+.note { color: var(--sub); font-size: 0.85rem; margin-top: 8px; }
+
+table.plain {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 6px;
+}
+table.plain td, table.plain th {
+  padding: 7px 8px;
+  border-bottom: 1px dashed var(--line);
+  text-align: left;
+  font-size: 0.95rem;
+}
+table.plain th { color: var(--sub); font-weight: normal; white-space: nowrap; }
+
+ul.list { list-style: none; }
+ul.list li {
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--line);
+}
+ul.list li:last-child { border-bottom: none; }
+
+.person { font-weight: bold; }
+.work { color: var(--sub); font-size: 0.85rem; }
+.age-label {
+  display: inline-block;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  padding: 1px 8px;
+  margin-right: 8px;
+}
+
+.subhead {
+  margin-top: 16px;
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--sub);
+}
+
+/* 人生時計の文字盤 */
+.clock-time {
+  font-size: 2.4rem;
+  font-weight: bold;
+  color: var(--accent);
+  letter-spacing: 2px;
+}
+
+/* プログレスバー */
+.bar {
+  height: 12px;
+  background: var(--accent-soft);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 10px 0 4px;
+}
+.bar > div {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+}
+
+/* 自分史年表のスクロール枠 */
+.scrollbox {
+  max-height: 420px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0 12px;
+  margin-top: 8px;
+}
+
+/* 小さめボタンと横並び */
+.btn-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 10px 0;
+}
+.sub-btn {
+  font-size: 0.95rem;
+  padding: 8px 18px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+.sub-btn:hover { opacity: 0.88; }
+#other-birthdate {
+  font-size: 1rem;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+}
+
+/* 折りたたみ(あと何回カレンダー) */
+details summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: bold;
+  padding: 6px 0;
+}
+details[open] summary { margin-bottom: 6px; }
+
+footer {
+  max-width: 860px;
+  margin: 30px auto 0;
+  text-align: center;
+  color: var(--sub);
+  font-size: 0.8rem;
+}
+footer code {
+  background: var(--accent-soft);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+@media (max-width: 600px) {
+  .card { padding: 16px; }
+  h1 { font-size: 1.5rem; }
+}
