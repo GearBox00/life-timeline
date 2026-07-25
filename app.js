@@ -866,6 +866,18 @@ el("theme-btn").addEventListener("click", toggleTheme);
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateThemeBtn);
 el("share-img-btn").addEventListener("click", downloadShareImage);
 el("share-copy-btn").addEventListener("click", copyShareText);
+el("print-btn").addEventListener("click", () => window.print());
+
+// 印刷のときだけ、折りたたんである部分を開いておく(印刷後は元に戻す)
+let detailsState = [];
+window.addEventListener("beforeprint", () => {
+  const list = document.querySelectorAll("details");
+  detailsState = [...list].map(d => d.open);
+  list.forEach(d => { d.open = true; });
+});
+window.addEventListener("afterprint", () => {
+  document.querySelectorAll("details").forEach((d, i) => { d.open = detailsState[i] === true; });
+});
 
 // 前回入力した生年月日を覚えておく
 const saved = localStorage.getItem("birthdate");

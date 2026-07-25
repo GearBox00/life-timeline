@@ -429,3 +429,56 @@ footer code {
   .theme-btn { width: 38px; height: 38px; font-size: 1.05rem; }
   h1 { padding: 0 42px; }
 }
+
+/* ===== 印刷するとき ===== */
+/* タブで隠れている分もすべて紙に出す。暗い表示のままでも白い紙に印刷する */
+@media print {
+  :root,
+  :root:not([data-theme="light"]),
+  :root[data-theme="dark"] {
+    --bg: #ffffff;
+    --card: #ffffff;
+    --ink: #1a1a1a;
+    --sub: #555555;
+    --accent: #8a3f20;
+    --accent-soft: #efe4dc;
+    --line: #bbbbbb;
+    --btn-text: #ffffff;
+    --error: #990000;
+  }
+
+  body { padding: 0; line-height: 1.6; }
+
+  /* 操作用の部品は紙には要らない */
+  .theme-btn,
+  .input-area,
+  .subtitle,
+  .tabs,
+  .share-bar,
+  #compare-btn,
+  footer { display: none !important; }
+
+  /* すべてのタブの中身を表示する */
+  .tabpanel { display: grid !important; gap: 12px; }
+  main { max-width: none; }
+
+  /* カードの途中で改ページされないようにする */
+  .card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    box-shadow: none;
+    padding: 12px 16px;
+  }
+
+  /* 自分史年表のスクロール枠を、全部見える形に開く */
+  .scrollbox {
+    max-height: none;
+    overflow: visible;
+    border: none;
+    padding: 0;
+  }
+
+  h1 { font-size: 1.4rem; padding: 0; }
+  .age-headline { font-size: 1.2rem; margin-top: 6px; }
+  .card h2 { font-size: 1.05rem; }
+}
