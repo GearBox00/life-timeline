@@ -85,7 +85,28 @@ function run() {
   renderJanet(age.y);
   renderSchool(birth);
 
-  el("results").classList.remove("hidden");
+  for (const id of ["results", "tabs", "share-bar", "age-headline"]) {
+    el(id).classList.remove("hidden");
+  }
+  showTab(localStorage.getItem("activeTab") || "me");
+}
+
+// ---------- タブの切り替え ----------
+
+function showTab(name) {
+  const buttons = document.querySelectorAll(".tab-btn");
+  const known = [...buttons].some(b => b.dataset.tab === name);
+  if (!known) name = "me";
+
+  buttons.forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+  document.querySelectorAll(".tabpanel").forEach(p => {
+    p.classList.toggle("active", p.id === "panel-" + name);
+  });
+  localStorage.setItem("activeTab", name);
+
+  // 下までスクロールした状態で切り替えたとき、中身の先頭に戻す
+  const tabs = el("tabs");
+  if (window.scrollY > tabs.offsetTop) tabs.scrollIntoView();
 }
 
 function showError(msg) { const e = el("error-msg"); e.textContent = msg; e.classList.remove("hidden"); }
@@ -94,8 +115,9 @@ function hideError() { el("error-msg").classList.add("hidden"); }
 // ---------- 各セクション ----------
 
 function renderBasic(birth, now, age, daysLived, secondsLived) {
+  // 年齢はタブの外(ヘッダー)に出して、どのタブでも見えるようにする
+  el("age-headline").textContent = `あなたは今 ${age.y}歳${age.m}ヶ月${age.d}日`;
   el("basic-content").innerHTML = `
-    <p>あなたは今 <span class="big">${age.y}歳${age.m}ヶ月${age.d}日</span></p>
     <table class="plain">
       <tr><th>生まれた日</th><td>${fmtDate(birth)}(${wareki(birth)})</td></tr>
       <tr><th>干支</th><td>${eto(birth.getFullYear())}年</td></tr>
@@ -588,6 +610,9 @@ async function copyShareText() {
 el("calc-btn").addEventListener("click", run);
 el("birthdate").addEventListener("keydown", e => { if (e.key === "Enter") run(); });
 el("compare-btn").addEventListener("click", runCompare);
+document.querySelectorAll(".tab-btn").forEach(b => {
+  b.addEventListener("click", () => showTab(b.dataset.tab));
+});
 el("share-img-btn").addEventListener("click", downloadShareImage);
 el("share-copy-btn").addEventListener("click", copyShareText);
 

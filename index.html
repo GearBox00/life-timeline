@@ -16,115 +16,147 @@
     <button id="calc-btn">測ってみる</button>
   </div>
   <p id="error-msg" class="error hidden"></p>
+  <p id="age-headline" class="age-headline hidden"></p>
 </header>
+
+<nav id="tabs" class="tabs hidden">
+  <button class="tab-btn" data-tab="me">わたし</button>
+  <button class="tab-btn" data-tab="era">時代</button>
+  <button class="tab-btn" data-tab="compare">くらべる</button>
+  <button class="tab-btn" data-tab="scale">ものさし</button>
+  <button class="tab-btn" data-tab="future">これから</button>
+</nav>
 
 <main id="results" class="hidden">
 
-  <section class="card" id="sec-basic">
-    <h2>📋 基本データ</h2>
-    <div class="content" id="basic-content"></div>
-  </section>
+  <!-- ===== タブ:わたし ===== -->
+  <div class="tabpanel" id="panel-me">
 
-  <section class="card" id="sec-capsule">
-    <h2>📦 生まれた日のタイムカプセル <span class="tag">その年、世の中は</span></h2>
-    <div class="content" id="capsule-content"></div>
-  </section>
+    <section class="card" id="sec-basic">
+      <h2>📋 基本データ</h2>
+      <div class="content" id="basic-content"></div>
+    </section>
 
-  <section class="card" id="sec-selfhistory">
-    <h2>📖 自分史年表 <span class="tag">あなたが生きてきた時代に起きたこと</span></h2>
-    <div class="content" id="selfhistory-content"></div>
-  </section>
+    <section class="card" id="sec-milestones">
+      <h2>🎉 記念日カウンター <span class="tag">誕生日以外の「祝える日」</span></h2>
+      <div class="content" id="milestones-content"></div>
+    </section>
 
-  <section class="card" id="sec-lifeclock">
-    <h2>🕐 人生時計 <span class="tag">人生80年を1日24時間にすると</span></h2>
-    <div class="content" id="lifeclock-content"></div>
-  </section>
+    <section class="card" id="sec-body">
+      <h2>❤️ 体の数字 <span class="tag">生まれてから今日まで</span></h2>
+      <div class="content" id="body-content"></div>
+    </section>
 
-  <section class="card" id="sec-history">
-    <h2>📜 歴史上の人物は、同じ年齢のとき何をしていた?</h2>
-    <div class="content" id="history-content"></div>
-  </section>
+    <section class="card" id="sec-school">
+      <h2>🏫 学年・入学年 早見</h2>
+      <div class="content" id="school-content"></div>
+    </section>
 
-  <section class="card" id="sec-characters">
-    <h2>🎭 創作キャラの「同世代」は誰?</h2>
-    <div class="content" id="characters-content"></div>
-  </section>
+  </div>
 
-  <section class="card" id="sec-future">
-    <h2>🔭 これからの楽しみ年表 <span class="tag">あなたが何歳のときに起こる?</span></h2>
-    <div class="content" id="future-content"></div>
-  </section>
+  <!-- ===== タブ:時代 ===== -->
+  <div class="tabpanel" id="panel-era">
 
-  <section class="card" id="sec-earth">
-    <h2>🌏 地球を100歳とすると <span class="tag">46億年 → 100年スケール</span></h2>
-    <div class="content" id="earth-content"></div>
-  </section>
+    <section class="card" id="sec-capsule">
+      <h2>📦 生まれた日のタイムカプセル <span class="tag">その年、世の中は</span></h2>
+      <div class="content" id="capsule-content"></div>
+    </section>
 
-  <section class="card" id="sec-mirror">
-    <h2>🪞 人生ミラー <span class="tag">生きてきた長さだけ、過去に遡ると</span></h2>
-    <div class="content" id="mirror-content"></div>
-  </section>
+    <section class="card" id="sec-selfhistory">
+      <h2>📖 自分史年表 <span class="tag">あなたが生きてきた時代に起きたこと</span></h2>
+      <div class="content" id="selfhistory-content"></div>
+    </section>
 
-  <section class="card" id="sec-planets">
-    <h2>🪐 惑星年齢 <span class="tag">よその星では何歳?</span></h2>
-    <div class="content" id="planets-content"></div>
-  </section>
+    <section class="card" id="sec-mirror">
+      <h2>🪞 人生ミラー <span class="tag">生きてきた長さだけ、過去に遡ると</span></h2>
+      <div class="content" id="mirror-content"></div>
+    </section>
 
-  <section class="card" id="sec-animals">
-    <h2>🐕 動物にたとえると</h2>
-    <div class="content" id="animals-content"></div>
-  </section>
+  </div>
 
-  <section class="card" id="sec-milestones">
-    <h2>🎉 記念日カウンター <span class="tag">誕生日以外の「祝える日」</span></h2>
-    <div class="content" id="milestones-content"></div>
-  </section>
+  <!-- ===== タブ:くらべる ===== -->
+  <div class="tabpanel" id="panel-compare">
 
-  <section class="card" id="sec-body">
-    <h2>❤️ 体の数字 <span class="tag">生まれてから今日まで</span></h2>
-    <div class="content" id="body-content"></div>
-  </section>
+    <section class="card" id="sec-history">
+      <h2>📜 歴史上の人物は、同じ年齢のとき何をしていた?</h2>
+      <div class="content" id="history-content"></div>
+    </section>
 
-  <section class="card" id="sec-janet">
-    <h2>⏳ 体感時間 <span class="tag">ジャネーの法則</span></h2>
-    <div class="content" id="janet-content"></div>
-  </section>
+    <section class="card" id="sec-characters">
+      <h2>🎭 創作キャラの「同世代」は誰?</h2>
+      <div class="content" id="characters-content"></div>
+    </section>
 
-  <section class="card" id="sec-remaining">
-    <h2>🌸 あと何回カレンダー <span class="tag">人生80年として</span></h2>
-    <div class="content" id="remaining-content"></div>
-  </section>
-
-  <section class="card" id="sec-school">
-    <h2>🏫 学年・入学年 早見</h2>
-    <div class="content" id="school-content"></div>
-  </section>
-
-  <section class="card" id="sec-compare">
-    <h2>👪 くらべる <span class="tag">家族・友だちの生年月日と</span></h2>
-    <div class="content">
-      <p>もうひとりの生年月日を入れると、ふたりの関係をいろんな角度で見られます。</p>
-      <div class="btn-row">
-        <input type="date" id="other-birthdate" min="1868-01-01">
-        <button id="compare-btn" class="sub-btn">比べる</button>
+    <section class="card" id="sec-compare">
+      <h2>👪 家族・友だちとくらべる</h2>
+      <div class="content">
+        <p>もうひとりの生年月日を入れると、ふたりの関係をいろんな角度で見られます。</p>
+        <div class="btn-row">
+          <input type="date" id="other-birthdate" min="1868-01-01">
+          <button id="compare-btn" class="sub-btn">比べる</button>
+        </div>
+        <div id="compare-content"></div>
       </div>
-      <div id="compare-content"></div>
-    </div>
-  </section>
+    </section>
 
-  <section class="card" id="sec-share">
-    <h2>📤 シェア・保存</h2>
-    <div class="content">
-      <p>今日の結果を画像やテキストで残せます。</p>
-      <div class="btn-row">
-        <button id="share-img-btn" class="sub-btn">シェア画像を保存</button>
-        <button id="share-copy-btn" class="sub-btn">結果をテキストでコピー</button>
-      </div>
-      <p id="share-status" class="note"></p>
-    </div>
-  </section>
+  </div>
+
+  <!-- ===== タブ:ものさし ===== -->
+  <div class="tabpanel" id="panel-scale">
+
+    <section class="card" id="sec-lifeclock">
+      <h2>🕐 人生時計 <span class="tag">人生80年を1日24時間にすると</span></h2>
+      <div class="content" id="lifeclock-content"></div>
+    </section>
+
+    <section class="card" id="sec-janet">
+      <h2>⏳ 体感時間 <span class="tag">ジャネーの法則</span></h2>
+      <div class="content" id="janet-content"></div>
+    </section>
+
+    <section class="card" id="sec-earth">
+      <h2>🌏 地球を100歳とすると <span class="tag">46億年 → 100年スケール</span></h2>
+      <div class="content" id="earth-content"></div>
+    </section>
+
+    <section class="card" id="sec-planets">
+      <h2>🪐 惑星年齢 <span class="tag">よその星では何歳?</span></h2>
+      <div class="content" id="planets-content"></div>
+    </section>
+
+    <section class="card" id="sec-animals">
+      <h2>🐕 動物にたとえると</h2>
+      <div class="content" id="animals-content"></div>
+    </section>
+
+  </div>
+
+  <!-- ===== タブ:これから ===== -->
+  <div class="tabpanel" id="panel-future">
+
+    <section class="card" id="sec-future">
+      <h2>🔭 これからの楽しみ年表 <span class="tag">あなたが何歳のときに起こる?</span></h2>
+      <div class="content" id="future-content"></div>
+    </section>
+
+    <section class="card" id="sec-remaining">
+      <h2>🌸 あと何回カレンダー <span class="tag">人生80年として</span></h2>
+      <div class="content" id="remaining-content"></div>
+    </section>
+
+  </div>
 
 </main>
+
+<!-- タブに関係なく、いつでも押せるシェア欄 -->
+<div id="share-bar" class="share-bar hidden">
+  <div class="btn-row">
+    <span class="share-label">📤 シェア・保存</span>
+    <button id="share-img-btn" class="sub-btn">シェア画像を保存</button>
+    <button id="share-copy-btn" class="sub-btn">結果をテキストでコピー</button>
+  </div>
+  <p id="share-status" class="note"></p>
+</div>
 
 <footer>
   <p>数値はすべて概算・お楽しみ用です。データは <code>data.js</code> に追記して増やせます。</p>

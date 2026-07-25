@@ -57,10 +57,57 @@ h1 { font-size: 1.9rem; margin-bottom: 6px; }
 .error { color: #c0392b; margin-top: 12px; }
 .hidden { display: none; }
 
+/* 年齢の見出し(タブを切り替えても常に見える) */
+.age-headline {
+  margin-top: 16px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--accent);
+}
+
+/* ===== タブ ===== */
+.tabs {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  max-width: 860px;
+  margin: 0 auto 18px;
+  display: flex;
+  gap: 4px;
+  background: var(--bg);
+  padding: 8px 0 0;
+  border-bottom: 2px solid var(--line);
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 11px 4px;
+  border: none;
+  border-bottom: 3px solid transparent;
+  border-radius: 10px 10px 0 0;
+  background: transparent;
+  color: var(--sub);
+  font-size: 1rem;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tab-btn:hover { background: var(--accent-soft); }
+.tab-btn.active {
+  color: var(--accent);
+  font-weight: bold;
+  background: var(--card);
+  border-bottom-color: var(--accent);
+}
+
 /* ===== カード ===== */
 main {
   max-width: 860px;
   margin: 0 auto;
+}
+
+.tabpanel { display: none; }
+.tabpanel.active {
   display: grid;
   gap: 18px;
 }
@@ -207,6 +254,20 @@ details summary {
 }
 details[open] summary { margin-bottom: 6px; }
 
+/* シェア欄(どのタブでも表示) */
+.share-bar {
+  max-width: 860px;
+  margin: 22px auto 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 6px 20px 12px;
+}
+.share-label {
+  font-weight: bold;
+  margin-right: 6px;
+}
+
 footer {
   max-width: 860px;
   margin: 30px auto 0;
@@ -223,4 +284,8 @@ footer code {
 @media (max-width: 600px) {
   .card { padding: 16px; }
   h1 { font-size: 1.5rem; }
+  .age-headline { font-size: 1.25rem; }
+  .tabs { gap: 2px; }
+  .tab-btn { font-size: 0.85rem; padding: 10px 2px; }
+  .share-bar { padding: 6px 16px 12px; }
 }
