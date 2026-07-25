@@ -358,30 +358,108 @@ function renderAnimals(userAge) {
     </table>`;
 }
 
-function renderMilestones(birth, now, daysLived) {
-  const rows = [];
+// 記念日の一覧を作る(画面表示とカレンダー書き出しの両方で使う)
+function buildMilestoneList(birth, now, daysLived) {
   const dateOfDay = n => new Date(birth.getTime() + n * MS_PER_DAY);
   const dateOfSec = s => new Date(birth.getTime() + s * 1000);
   const secondsLived = (now - birth) / 1000;
+  const list = [];
 
   // 次の「1000日区切り」
   const nextK = (Math.floor(daysLived / 1000) + 1) * 1000;
-  rows.push(`<tr><th>生後 ${fmtNum(nextK)} 日目</th><td>${fmtDate(dateOfDay(nextK))}(あと${fmtNum(nextK - daysLived)}日)</td></tr>`);
+  list.push({ title: `生後 ${fmtNum(nextK)} 日目`, date: dateOfDay(nextK), done: false, remain: nextK - daysLived });
 
-  // 大きな節目
-  const bigDays = [10000, 20000, 30000];
-  for (const n of bigDays) {
-    const d = dateOfDay(n);
-    rows.push(`<tr><th>生後 ${fmtNum(n)} 日目</th><td>${fmtDate(d)}${n <= daysLived ? "(済み🎉)" : `(あと${fmtNum(n - daysLived)}日)`}</td></tr>`);
+  // 大きな節目(1000日区切りと重なる場合は入れない)
+  for (const n of [10000, 20000, 30000]) {
+    if (n === nextK) continue;
+    list.push({ title: `生後 ${fmtNum(n)} 日目`, date: dateOfDay(n), done: n <= daysLived, remain: n - daysLived });
   }
-  const bigSecs = [1e9, 2e9];
-  for (const s of bigSecs) {
-    const d = dateOfSec(s);
-    rows.push(`<tr><th>生後 ${s / 1e8}億秒</th><td>${fmtDate(d)}${s <= secondsLived ? "(済み🎉)" : ""}</td></tr>`);
+  for (const s of [1e9, 2e9]) {
+    list.push({ title: `生後 ${s / 1e8}億秒`, date: dateOfSec(s), done: s <= secondsLived, remain: null });
   }
+  return list.sort((a, b) => a.date - b.date);
+}
+
+function renderMilestones(birth, now, daysLived) {
+  const rows = buildMilestoneList(birth, now, daysLived).map(m => {
+    const note = m.done ? "(済み🎉)" : (m.remain !== null ? `(あと${fmtNum(m.remain)}日)` : "");
+    return `<tr><th>${m.title}</th><td>${fmtDate(m.date)}${note}</td></tr>`;
+  });
   el("milestones-content").innerHTML = `
     <table class="plain">${rows.join("")}</table>
     <p class="note">10億秒はだいたい31年8ヶ月。知らないうちに通り過ぎがちな記念日です。</p>`;
+}
+
+// ---------- 記念日をカレンダーに登録する(.icsファイル) ----------
+
+// カレンダーの形式で使えない文字を逃がす
+function icsEscape(s) {
+  return String(s).replace(/[\\;,]/g, m => "\\" + m).replace(/\n/g, "\\n");
+}
+function icsDate(d) {
+  const p = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}`;
+}
+
+// カレンダーの決まりで1行は75バイトまで。長い行は先頭に空白を入れて折り返す
+function icsFold(line) {
+  const enc = new TextEncoder();
+  if (enc.encode(line).length <= 74) return line;
+  const parts = [];
+  let cur = "", bytes = 0;
+  for (const ch of line) { // 日本語が途中で切れないように1文字ずつ数える
+    const size = enc.encode(ch).length;
+    const limit = parts.length === 0 ? 74 : 73; // 2行目以降は先頭の空白の分だけ短くする
+    if (bytes + size > limit) { parts.push(cur); cur = ""; bytes = 0; }
+    cur += ch;
+    bytes += size;
+  }
+  if (cur) parts.push(cur);
+  return parts.join("\r\n ");
+}
+
+function downloadIcs() {
+  const status = msg => { el("ics-status").textContent = msg; };
+  if (!lastResult) { status("先に生年月日を入力してください。"); return; }
+
+  const { birth, now, daysLived } = lastResult;
+  const events = buildMilestoneList(birth, now, daysLived).filter(m => !m.done);
+  if (events.length === 0) { status("これから来る記念日が見つかりませんでした。"); return; }
+
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+  const lines = [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//jinsei-monosashi//JP",
+    "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+  ];
+  events.forEach((ev, i) => {
+    const endDate = new Date(ev.date.getTime() + MS_PER_DAY);
+    lines.push(
+      "BEGIN:VEVENT",
+      `UID:${icsDate(ev.date)}-${i}-${icsDate(birth)}@jinsei-monosashi`,
+      `DTSTAMP:${stamp}`,
+      `DTSTART;VALUE=DATE:${icsDate(ev.date)}`,
+      `DTEND;VALUE=DATE:${icsDate(endDate)}`,
+      `SUMMARY:🎉 ${icsEscape(ev.title)}`,
+      `DESCRIPTION:${icsEscape(`${fmtDate(birth)}生まれのあなたの記念日です。(人生ものさし年表)`)}`,
+      "TRANSP:TRANSPARENT",
+      // 前日にお知らせ
+      "BEGIN:VALARM", "TRIGGER:-P1D", "ACTION:DISPLAY",
+      `DESCRIPTION:${icsEscape("あすは " + ev.title)}`, "END:VALARM",
+      "END:VEVENT"
+    );
+  });
+  lines.push("END:VCALENDAR");
+
+  // 改行コードはCRLFにする決まりになっている
+  const body = lines.map(icsFold).join("\r\n") + "\r\n";
+  const blob = new Blob([body], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "kinenbi.ics";
+  a.click();
+  URL.revokeObjectURL(url);
+  status(`${events.length}件を書き出しました。保存したファイルを開くとカレンダーに登録できます(前日にお知らせが出ます)。`);
 }
 
 function renderBody(age, daysLived) {
@@ -896,6 +974,7 @@ if (savedTheme === "dark" || savedTheme === "light") {
 updateThemeBtn();
 el("theme-btn").addEventListener("click", toggleTheme);
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateThemeBtn);
+el("ics-btn").addEventListener("click", downloadIcs);
 el("share-url-btn").addEventListener("click", copyShareUrl);
 el("share-img-btn").addEventListener("click", downloadShareImage);
 el("share-copy-btn").addEventListener("click", copyShareText);
