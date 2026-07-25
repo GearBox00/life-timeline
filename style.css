@@ -9,6 +9,36 @@
   --accent: #b3552e;
   --accent-soft: #f3e2d6;
   --line: #e5dfd2;
+  --btn-text: #ffffff;
+  --error: #c0392b;
+}
+
+/* ダークモードの色。パソコン・スマホの設定に自動で合わせる */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1c1a17;
+    --card: #26231f;
+    --ink: #ece7dd;
+    --sub: #a49c8d;
+    --accent: #e08a5c;
+    --accent-soft: #3a2c23;
+    --line: #3b3630;
+    --btn-text: #241a13;
+    --error: #ff9c8f;
+  }
+}
+
+/* ボタンで手動で切り替えたときは、こちらが優先される */
+:root[data-theme="dark"] {
+  --bg: #1c1a17;
+  --card: #26231f;
+  --ink: #ece7dd;
+  --sub: #a49c8d;
+  --accent: #e08a5c;
+  --accent-soft: #3a2c23;
+  --line: #3b3630;
+  --btn-text: #241a13;
+  --error: #ff9c8f;
 }
 
 body {
@@ -19,13 +49,31 @@ body {
   padding: 24px 16px 60px;
 }
 
+/* テーマ切り替えボタン(ヘッダーの右上) */
+.theme-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.theme-btn:hover { background: var(--accent-soft); }
+
 header {
+  position: relative;
   max-width: 860px;
   margin: 0 auto 28px;
   text-align: center;
 }
 
-h1 { font-size: 1.9rem; margin-bottom: 6px; }
+h1 { font-size: 1.9rem; margin-bottom: 6px; padding: 0 48px; }
 .subtitle { color: var(--sub); font-size: 0.95rem; margin-bottom: 20px; }
 
 .input-area {
@@ -49,12 +97,13 @@ h1 { font-size: 1.9rem; margin-bottom: 6px; }
   border: none;
   border-radius: 10px;
   background: var(--accent);
-  color: #fff;
+  color: var(--btn-text);
+  font-family: inherit;
   cursor: pointer;
 }
 #calc-btn:hover { opacity: 0.88; }
 
-.error { color: #c0392b; margin-top: 12px; }
+.error { color: var(--error); margin-top: 12px; }
 .hidden { display: none; }
 
 /* 年齢の見出し(タブを切り替えても常に見える) */
@@ -233,7 +282,8 @@ ul.list li:last-child { border-bottom: none; }
   border: none;
   border-radius: 10px;
   background: var(--accent);
-  color: #fff;
+  color: var(--btn-text);
+  font-family: inherit;
   cursor: pointer;
 }
 .sub-btn:hover { opacity: 0.88; }
@@ -253,6 +303,81 @@ details summary {
   padding: 6px 0;
 }
 details[open] summary { margin-bottom: 6px; }
+
+/* 人生の見取り図(ビジュアル年表) */
+.tl { padding-top: 28px; }
+
+.tl-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.tl-label {
+  flex: none;
+  width: 3.4em;
+  text-align: right;
+  font-size: 0.78rem;
+  color: var(--sub);
+}
+
+.tl-track {
+  position: relative;
+  flex: 1;
+  height: 22px;
+  background: var(--accent-soft);
+  border-radius: 11px;
+}
+.tl-track.sm { height: 14px; border-radius: 7px; }
+
+.tl-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: var(--accent);
+  border-radius: inherit;
+}
+.tl-fill.other { background: var(--sub); }
+
+/* 人生の節目のしるし */
+.tl-mark {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 2px;
+  background: var(--card);
+  opacity: 0.85;
+}
+
+/* 「今」の位置 */
+.tl-now {
+  position: absolute;
+  top: -6px; bottom: -6px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--ink);
+}
+.tl-nowlabel {
+  position: absolute;
+  top: -30px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-weight: bold;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.tl-scale {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--sub);
+}
+
+.tl-legend {
+  font-size: 0.82rem;
+  color: var(--sub);
+  margin-top: 2px;
+}
 
 /* シェア欄(どのタブでも表示) */
 .share-bar {
@@ -288,4 +413,6 @@ footer code {
   .tabs { gap: 2px; }
   .tab-btn { font-size: 0.85rem; padding: 10px 2px; }
   .share-bar { padding: 6px 16px 12px; }
+  .theme-btn { width: 38px; height: 38px; font-size: 1.05rem; }
+  h1 { padding: 0 42px; }
 }

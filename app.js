@@ -6,6 +6,7 @@ const MS_PER_DAY = 86400000;
 const LIFESPAN = 80; // 「人生◯年」として使う基準
 
 let lastResult = null; // 最後に計算した結果(シェア・くらべる機能で使う)
+let lastOther = null;  // 「くらべる」で入れた相手(見取り図に重ねて表示する)
 
 // ---------- 小さな道具たち ----------
 function el(id) { return document.getElementById(id); }
@@ -43,6 +44,17 @@ function wareki(date) {
   return "";
 }
 
+// 学年の区切り(4月2日〜翌4月1日が同じ学年)
+function cohortYear(date) {
+  const m = date.getMonth() + 1, d = date.getDate();
+  const early = m < 4 || (m === 4 && d === 1); // 早生まれ
+  return early ? date.getFullYear() - 1 : date.getFullYear();
+}
+function isEarlyBirth(date) {
+  const m = date.getMonth() + 1, d = date.getDate();
+  return m < 4 || (m === 4 && d === 1);
+}
+
 // 干支(十二支)
 function eto(year) {
   const animals = ["子(ね)", "丑(うし)", "寅(とら)", "卯(う)", "辰(たつ)", "巳(み)",
@@ -68,7 +80,12 @@ function run() {
 
   lastResult = { birth, now, age, daysLived };
 
+  lastOther = null;
+
   renderBasic(birth, now, age, daysLived, secondsLived);
+  renderTimeline();
+  renderBirthdayTwins(birth);
+  renderClassmates(birth);
   renderCapsule(birth);
   renderSelfHistory(birth, now);
   renderLifeClock(birth, now);
@@ -333,9 +350,8 @@ function renderJanet(userAge) {
 }
 
 function renderSchool(birth) {
-  const m = birth.getMonth() + 1, d = birth.getDate();
-  const early = m < 4 || (m === 4 && d === 1); // 早生まれ(1/1〜4/1)
-  const cohort = early ? birth.getFullYear() - 1 : birth.getFullYear();
+  const early = isEarlyBirth(birth);
+  const cohort = cohortYear(birth);
   const rows = [
     ["小学校 入学", `${cohort + 7}年4月`],
     ["中学校 入学", `${cohort + 13}年4月`],
@@ -438,6 +454,170 @@ function renderRemaining(birth, now, age) {
     </details>`;
 }
 
+// ---------- 人生の見取り図(横棒の年表) ----------
+
+function renderTimeline() {
+  const { birth, now, age } = lastResult;
+  const ageExact = (now - birth) / (MS_PER_DAY * 365.2425);
+  const maxAge = Math.max(80, Math.ceil(ageExact / 10) * 10);
+  const pct = a => (Math.min(a, maxAge) / maxAge) * 100;
+
+  // 人生の節目(帯の上に小さな目印を置き、説明は下にまとめて書く)
+  const marks = [
+    { a: 6, t: "小学校入学" },
+    { a: 20, t: "二十歳" },
+    { a: 60, t: "還暦" },
+    { a: 84, t: "平均寿命あたり" },
+  ].filter(m => m.a <= maxAge);
+
+  const nowPct = pct(ageExact);
+  const labelPct = Math.min(92, Math.max(8, nowPct)); // 端で文字がはみ出さないように
+
+  let rows = `
+    <div class="tl-row">
+      <div class="tl-label">${lastOther ? "あなた" : ""}</div>
+      <div class="tl-track">
+        <div class="tl-fill" style="width:${nowPct.toFixed(1)}%"></div>
+        ${marks.map(m => `<div class="tl-mark" style="left:${pct(m.a).toFixed(1)}%"></div>`).join("")}
+        <div class="tl-now" style="left:${nowPct.toFixed(1)}%"></div>
+        <div class="tl-nowlabel" style="left:${labelPct.toFixed(1)}%">今 ${age.y}歳</div>
+      </div>
+    </div>`;
+
+  if (lastOther) {
+    const oAge = (now - lastOther) / (MS_PER_DAY * 365.2425);
+    rows += `
+      <div class="tl-row">
+        <div class="tl-label">相手</div>
+        <div class="tl-track sm">
+          <div class="tl-fill other" style="width:${pct(oAge).toFixed(1)}%"></div>
+        </div>
+      </div>`;
+  }
+
+  // 10年ごとの目盛り
+  const scale = [];
+  for (let a = 0; a <= maxAge; a += 10) scale.push(`<span>${a}</span>`);
+  rows += `
+    <div class="tl-row">
+      <div class="tl-label"></div>
+      <div class="tl-scale">${scale.join("")}</div>
+    </div>`;
+
+  const note = lastOther
+    ? "細いほうの帯は、「くらべる」で入力した相手の人生です。"
+    : "「くらべる」タブで相手の生年月日を入れると、その人の人生もここに並べて表示されます。";
+
+  el("timeline-content").innerHTML = `
+    <div class="tl">${rows}</div>
+    <p class="tl-legend">帯の上の細い線 … ${marks.map(m => `${m.a}歳 ${m.t}`).join(" ・ ")}</p>
+    <p class="note">色が濃い部分が、これまでに生きてきた時間です。下の数字は年齢の目盛り。${note}</p>`;
+}
+
+// ---------- 同じ誕生日・同学年の有名人 ----------
+
+// 1月1日からの通算日(誕生日どうしの近さを測るのに使う)
+function dayOfYear(m, d) {
+  return Math.round((new Date(2001, m - 1, d) - new Date(2001, 0, 1)) / MS_PER_DAY);
+}
+
+function renderBirthdayTwins(birth) {
+  const m = birth.getMonth() + 1, d = birth.getDate();
+  const myYear = birth.getFullYear();
+
+  const line = p => {
+    const diff = myYear - p.y;
+    const rel = diff === 0 ? "あなたと同い年!" : diff > 0 ? `あなたより${diff}歳年上` : `あなたより${-diff}歳年下`;
+    return `<li><span class="age-label">${p.y}年</span><span class="person">${p.name}</span>
+      <span class="work">${p.field} / ${rel}</span></li>`;
+  };
+
+  const same = FAMOUS_PEOPLE.filter(p => p.m === m && p.d === d).sort((a, b) => a.y - b.y);
+  if (same.length > 0) {
+    el("birthday-content").innerHTML = `
+      <p><strong>${m}月${d}日</strong>生まれの有名人です。誕生日おめでとうを言い合える仲間。</p>
+      <ul class="list">${same.map(line).join("")}</ul>`;
+    return;
+  }
+
+  // ぴったり同じ日がいないときは、日付が近い人を出す
+  const myDoy = dayOfYear(m, d);
+  const near = FAMOUS_PEOPLE
+    .map(p => {
+      const gap = Math.abs(dayOfYear(p.m, p.d) - myDoy);
+      return { p, gap: Math.min(gap, 365 - gap) };
+    })
+    .sort((a, b) => a.gap - b.gap)
+    .slice(0, 4);
+  el("birthday-content").innerHTML = `
+    <p>${m}月${d}日ぴったりの人はまだデータにいませんが、誕生日が近いのはこの人たちです。
+    <span class="work">(<code>data.js</code> の FAMOUS_PEOPLE に追加できます)</span></p>
+    <ul class="list">${near.map(({ p, gap }) =>
+      `<li><span class="age-label">${p.m}月${p.d}日</span><span class="person">${p.name}</span>
+        <span class="work">${p.field} / ${gap}日ちがい</span></li>`).join("")}</ul>`;
+}
+
+function renderClassmates(birth) {
+  const myCohort = cohortYear(birth);
+  const all = FAMOUS_PEOPLE.map(p => {
+    const dt = new Date(p.y, p.m - 1, p.d);
+    return { p, dt, cohort: cohortYear(dt) };
+  });
+  // 4月始まりの順に並べる
+  const inYearOrder = (a, b) =>
+    ((a.p.m - 4 + 12) % 12) * 100 + a.p.d - (((b.p.m - 4 + 12) % 12) * 100 + b.p.d);
+
+  const line = x => {
+    const early = isEarlyBirth(x.dt) ? ' <span class="work">(早生まれ)</span>' : "";
+    return `<li><span class="age-label">${x.p.m}月${x.p.d}日</span><span class="person">${x.p.name}</span>
+      <span class="work">${x.p.field}</span>${early}</li>`;
+  };
+
+  const label = c => `${c}年4月〜${c + 1}年3月生まれ`;
+  const same = all.filter(x => x.cohort === myCohort).sort(inYearOrder);
+  const mine = `<p>あなたは <strong>${label(myCohort)}</strong> の学年です。${isEarlyBirth(birth) ? "(早生まれなので、ひとつ上の学年組)" : ""}</p>`;
+
+  if (same.length > 0) {
+    el("classmates-content").innerHTML = `
+      ${mine}
+      <p class="subhead">同じ学年の有名人</p>
+      <ul class="list">${same.map(line).join("")}</ul>`;
+    return;
+  }
+
+  const near = all.filter(x => Math.abs(x.cohort - myCohort) === 1)
+    .sort((a, b) => a.cohort - b.cohort || inYearOrder(a, b));
+  el("classmates-content").innerHTML = `
+    ${mine}
+    <p>同じ学年の有名人はまだデータにいません。前後の学年にはこの人たちがいます。
+    <span class="work">(<code>data.js</code> の FAMOUS_PEOPLE に追加できます)</span></p>
+    <ul class="list">${near.slice(0, 6).map(x =>
+      `<li><span class="age-label">${x.cohort < myCohort ? "1コ上" : "1コ下"}</span>
+        <span class="person">${x.p.name}</span> <span class="work">${x.p.field}</span></li>`).join("")}</ul>`;
+}
+
+// ---------- 表示テーマ(明るい/暗い) ----------
+
+function currentTheme() {
+  const attr = document.documentElement.getAttribute("data-theme");
+  if (attr) return attr;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function updateThemeBtn() {
+  const dark = currentTheme() === "dark";
+  const b = el("theme-btn");
+  b.textContent = dark ? "☀️" : "🌙";
+  b.title = dark ? "明るい表示に切り替える" : "暗い表示に切り替える";
+}
+
+function toggleTheme() {
+  const next = currentTheme() === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  localStorage.setItem("theme", next);
+  updateThemeBtn();
+}
+
 // ---------- くらべる ----------
 
 function runCompare() {
@@ -498,7 +678,12 @@ function runCompare() {
   };
   rows.push(["人生時計(80年=24時間)", `あなた ${clock(birth)} / 相手 ${clock(other)}`]);
 
-  content.innerHTML = `<table class="plain">${rows.map(([k, v2]) => `<tr><th>${k}</th><td>${v2}</td></tr>`).join("")}</table>`;
+  content.innerHTML = `<table class="plain">${rows.map(([k, v2]) => `<tr><th>${k}</th><td>${v2}</td></tr>`).join("")}</table>
+    <p class="note">「わたし」タブの人生の見取り図に、相手の帯も重ねて表示しました。</p>`;
+
+  // 見取り図に相手を重ねて描き直す
+  lastOther = other;
+  renderTimeline();
 }
 
 // ---------- シェア(画像・テキスト) ----------
@@ -613,6 +798,15 @@ el("compare-btn").addEventListener("click", runCompare);
 document.querySelectorAll(".tab-btn").forEach(b => {
   b.addEventListener("click", () => showTab(b.dataset.tab));
 });
+
+// 表示テーマ。前回選んだ設定がなければ、パソコン・スマホの設定に合わせる
+const savedTheme = localStorage.getItem("theme");
+if (savedTheme === "dark" || savedTheme === "light") {
+  document.documentElement.setAttribute("data-theme", savedTheme);
+}
+updateThemeBtn();
+el("theme-btn").addEventListener("click", toggleTheme);
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateThemeBtn);
 el("share-img-btn").addEventListener("click", downloadShareImage);
 el("share-copy-btn").addEventListener("click", copyShareText);
 

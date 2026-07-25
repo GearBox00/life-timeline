@@ -9,6 +9,7 @@
 <body>
 
 <header>
+  <button id="theme-btn" class="theme-btn" title="表示テーマを切り替える">🌙</button>
   <h1>🕰️ 人生ものさし年表</h1>
   <p class="subtitle">生年月日を入れると、あなたの「いま」をいろんなものさしで測ります</p>
   <div class="input-area">
@@ -31,6 +32,11 @@
 
   <!-- ===== タブ:わたし ===== -->
   <div class="tabpanel" id="panel-me">
+
+    <section class="card" id="sec-timeline">
+      <h2>📊 人生の見取り図 <span class="tag">生まれてから80歳まで</span></h2>
+      <div class="content" id="timeline-content"></div>
+    </section>
 
     <section class="card" id="sec-basic">
       <h2>📋 基本データ</h2>
@@ -85,6 +91,16 @@
     <section class="card" id="sec-characters">
       <h2>🎭 創作キャラの「同世代」は誰?</h2>
       <div class="content" id="characters-content"></div>
+    </section>
+
+    <section class="card" id="sec-birthday">
+      <h2>🎂 同じ誕生日の有名人</h2>
+      <div class="content" id="birthday-content"></div>
+    </section>
+
+    <section class="card" id="sec-classmates">
+      <h2>🎓 同学年の有名人 <span class="tag">早生まれも計算に入れています</span></h2>
+      <div class="content" id="classmates-content"></div>
     </section>
 
     <section class="card" id="sec-compare">
