@@ -62,17 +62,76 @@ function eto(year) {
   return animals[(((year - 4) % 12) + 12) % 12];
 }
 
+// ---------- 年・月・日の入力欄 ----------
+
+const MIN_YEAR = 1900;
+const rebuilders = {}; // 「日」の選択肢を作り直す関数を、入力欄ごとに覚えておく
+
+function setupDateFields(prefix) {
+  const fy = el(prefix + "-y"), fm = el(prefix + "-m"), fd = el(prefix + "-d");
+  const thisYear = new Date().getFullYear();
+  fy.min = MIN_YEAR;
+  fy.max = thisYear;
+
+  const options = n => '<option value="">--</option>' +
+    Array.from({ length: n }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("");
+  fm.innerHTML = options(12);
+
+  // 選んだ年と月に合わせて「日」の選択肢を作り直す(2月なら28日か29日まで)
+  const rebuildDays = () => {
+    const keep = fd.value;
+    const y = parseInt(fy.value, 10), m = parseInt(fm.value, 10);
+    const last = (y && m) ? new Date(y, m, 0).getDate() : 31;
+    fd.innerHTML = options(last);
+    if (keep && Number(keep) <= last) fd.value = keep;
+  };
+  rebuildDays();
+  fy.addEventListener("input", rebuildDays);
+  fm.addEventListener("change", rebuildDays);
+  rebuilders[prefix] = rebuildDays;
+
+  // どの欄でもEnterで実行できるようにする
+  const go = prefix === "birth" ? run : runCompare;
+  [fy, fm, fd].forEach(f => f.addEventListener("keydown", e => { if (e.key === "Enter") go(); }));
+}
+
+// 入力欄から日付を取り出す。おかしければ理由を返す
+function readDateFields(prefix) {
+  const y = parseInt(el(prefix + "-y").value, 10);
+  const m = parseInt(el(prefix + "-m").value, 10);
+  const d = parseInt(el(prefix + "-d").value, 10);
+  const thisYear = new Date().getFullYear();
+  if (!y || !m || !d) return { error: "生年月日をすべて選んでください。" };
+  if (y < MIN_YEAR || y > thisYear) return { error: `年は ${MIN_YEAR}〜${thisYear} の間で入力してください。` };
+  const date = new Date(y, m - 1, d);
+  if (date.getDate() !== d) return { error: `${m}月${d}日という日は存在しません。` };
+  if (date >= new Date()) return { error: "過去の日付を入力してください。" };
+  return { date };
+}
+
+function writeDateFields(prefix, iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  el(prefix + "-y").value = y;
+  el(prefix + "-m").value = m;
+  rebuilders[prefix]();
+  el(prefix + "-d").value = d;
+}
+
+function toISO(date) {
+  const p = n => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}`;
+}
+
 // ---------- メイン ----------
 function run() {
-  const v = el("birthdate").value;
-  if (!v) { showError("生年月日を入力してください"); return; }
+  const parsed = readDateFields("birth");
+  if (parsed.error) { showError(parsed.error); return; }
 
-  const birth = new Date(v + "T00:00:00");
+  const birth = parsed.date;
   const now = new Date();
-  if (isNaN(birth) || birth >= now) { showError("正しい過去の日付を入力してください"); return; }
 
   hideError();
-  localStorage.setItem("birthdate", v);
+  localStorage.setItem("birthdate", toISO(birth));
 
   const age = calcAge(birth, now);
   const daysLived = Math.floor((now - birth) / MS_PER_DAY);
@@ -626,17 +685,13 @@ function runCompare() {
     content.innerHTML = `<p class="note">先に上であなたの生年月日を入力してください。</p>`;
     return;
   }
-  const v = el("other-birthdate").value;
-  if (!v) {
-    content.innerHTML = `<p class="note">比べたい人の生年月日を入力してください。</p>`;
+  const parsed = readDateFields("other");
+  if (parsed.error) {
+    content.innerHTML = `<p class="note">${parsed.error}</p>`;
     return;
   }
-  const other = new Date(v + "T00:00:00");
+  const other = parsed.date;
   const { birth, now } = lastResult;
-  if (isNaN(other) || other >= now) {
-    content.innerHTML = `<p class="note">正しい過去の日付を入力してください。</p>`;
-    return;
-  }
 
   const me = lastResult.age;
   const otherAge = calcAge(other, now);
@@ -792,8 +847,10 @@ async function copyShareText() {
 }
 
 // ---------- 起動 ----------
+setupDateFields("birth");
+setupDateFields("other");
+
 el("calc-btn").addEventListener("click", run);
-el("birthdate").addEventListener("keydown", e => { if (e.key === "Enter") run(); });
 el("compare-btn").addEventListener("click", runCompare);
 document.querySelectorAll(".tab-btn").forEach(b => {
   b.addEventListener("click", () => showTab(b.dataset.tab));
@@ -812,7 +869,7 @@ el("share-copy-btn").addEventListener("click", copyShareText);
 
 // 前回入力した生年月日を覚えておく
 const saved = localStorage.getItem("birthdate");
-if (saved) {
-  el("birthdate").value = saved;
+if (saved && /^\d{4}-\d{2}-\d{2}$/.test(saved)) {
+  writeDateFields("birth", saved);
   run();
 }

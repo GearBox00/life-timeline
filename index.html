@@ -13,7 +13,11 @@
   <h1>🕰️ 人生ものさし年表</h1>
   <p class="subtitle">生年月日を入れると、あなたの「いま」をいろんなものさしで測ります</p>
   <div class="input-area">
-    <input type="date" id="birthdate" min="1868-01-01">
+    <div class="date-fields">
+      <input type="number" id="birth-y" class="f-year" inputmode="numeric" placeholder="1990"><span>年</span>
+      <select id="birth-m" class="f-sel"></select><span>月</span>
+      <select id="birth-d" class="f-sel"></select><span>日</span>
+    </div>
     <button id="calc-btn">測ってみる</button>
   </div>
   <p id="error-msg" class="error hidden"></p>
@@ -108,7 +112,11 @@
       <div class="content">
         <p>もうひとりの生年月日を入れると、ふたりの関係をいろんな角度で見られます。</p>
         <div class="btn-row">
-          <input type="date" id="other-birthdate" min="1868-01-01">
+          <div class="date-fields">
+            <input type="number" id="other-y" class="f-year" inputmode="numeric" placeholder="1960"><span>年</span>
+            <select id="other-m" class="f-sel"></select><span>月</span>
+            <select id="other-d" class="f-sel"></select><span>日</span>
+          </div>
           <button id="compare-btn" class="sub-btn">比べる</button>
         </div>
         <div id="compare-content"></div>
