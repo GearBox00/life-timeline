@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>人生ものさし年表</title>
 <link rel="stylesheet" href="style.css">
+<!-- ホーム画面に追加したときの設定 -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#b3552e">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ものさし年表">
 </head>
 <body>
 
@@ -21,6 +28,7 @@
     <button id="calc-btn">測ってみる</button>
   </div>
   <p id="error-msg" class="error hidden"></p>
+  <div id="people-bar" class="people-bar hidden"></div>
   <p id="age-headline" class="age-headline hidden"></p>
 </header>
 
@@ -106,6 +114,11 @@
     <section class="card" id="sec-birthday">
       <h2>🎂 同じ誕生日の有名人</h2>
       <div class="content" id="birthday-content"></div>
+    </section>
+
+    <section class="card" id="sec-today">
+      <h2>🗓️ 今日が誕生日の有名人</h2>
+      <div class="content" id="today-content"></div>
     </section>
 
     <section class="card" id="sec-classmates">

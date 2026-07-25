@@ -45,6 +45,12 @@ function wareki(date) {
   return "";
 }
 
+// 名前など、人が入力した文字をそのまま画面に出すときの安全対策
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
 // 学年の区切り(4月2日〜翌4月1日が同じ学年)
 function cohortYear(date) {
   const m = date.getMonth() + 1, d = date.getDate();
@@ -123,6 +129,72 @@ function toISO(date) {
   return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}`;
 }
 
+function isISO(s) {
+  return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
+}
+
+// ---------- 保存した人(家族・友だち)の切り替え ----------
+
+const MAX_PEOPLE = 10;
+
+function loadPeople() {
+  try {
+    const v = JSON.parse(localStorage.getItem("people"));
+    return Array.isArray(v) ? v.filter(p => p && typeof p.n === "string" && isISO(p.d)) : [];
+  } catch {
+    return [];
+  }
+}
+
+function storePeople(list) {
+  localStorage.setItem("people", JSON.stringify(list));
+  renderPeopleBar();
+}
+
+function renderPeopleBar() {
+  const people = loadPeople();
+  const bar = el("people-bar");
+  if (people.length === 0 && !lastResult) { bar.classList.add("hidden"); return; }
+  bar.classList.remove("hidden");
+
+  const chips = people.map((p, i) =>
+    `<span class="chip"><button class="chip-main" data-load="${i}">${escapeHtml(p.n)}</button>` +
+    `<button class="chip-del" data-del="${i}" title="消す">×</button></span>`).join("");
+  const add = (lastResult && people.length < MAX_PEOPLE)
+    ? `<button class="chip-add" data-add="1">＋ いまの生年月日を保存</button>` : "";
+
+  bar.innerHTML = (people.length ? `<span class="people-label">保存した人:</span>` : "") + chips + add;
+}
+
+function handlePeopleClick(e) {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  const people = loadPeople();
+
+  if (btn.dataset.add) {
+    if (!lastResult) return;
+    const name = (prompt("名前をつけて保存します(例: 自分、母、父)") || "").trim();
+    if (!name) return;
+    people.push({ n: name.slice(0, 12), d: toISO(lastResult.birth) });
+    storePeople(people);
+    return;
+  }
+  if (btn.dataset.del !== undefined) {
+    const i = Number(btn.dataset.del);
+    if (!people[i]) return;
+    if (!confirm(`「${people[i].n}」を消しますか?`)) return;
+    people.splice(i, 1);
+    storePeople(people);
+    return;
+  }
+  if (btn.dataset.load !== undefined) {
+    const p = people[Number(btn.dataset.load)];
+    if (!p) return;
+    writeDateFields("birth", p.d);
+    run();
+  }
+}
+
 // ---------- メイン ----------
 function run() {
   const parsed = readDateFields("birth");
@@ -146,6 +218,7 @@ function run() {
   renderBasic(birth, now, age, daysLived, secondsLived);
   renderTimeline();
   renderBirthdayTwins(birth);
+  renderTodaysBirthdays(birth, now);
   renderClassmates(birth);
   renderCapsule(birth);
   renderSelfHistory(birth, now);
@@ -167,6 +240,7 @@ function run() {
     el(id).classList.remove("hidden");
   }
   showTab(localStorage.getItem("activeTab") || "me");
+  renderPeopleBar();
 }
 
 // ---------- タブの切り替え ----------
@@ -696,6 +770,42 @@ function renderBirthdayTwins(birth) {
         <span class="work">${p.field} / ${gap}日ちがい</span></li>`).join("")}</ul>`;
 }
 
+function renderTodaysBirthdays(birth, now) {
+  const m = now.getMonth() + 1, d = now.getDate();
+  const thisYear = now.getFullYear();
+  const today = FAMOUS_PEOPLE.filter(p => p.m === m && p.d === d).sort((a, b) => a.y - b.y);
+  const isMyBirthday = (birth.getMonth() + 1) === m && birth.getDate() === d;
+
+  const head = `<p><strong>${m}月${d}日</strong>${isMyBirthday
+    ? " — 今日はあなたの誕生日です。おめでとうございます!🎂"
+    : "、今日が誕生日なのはこの人たちです。"}</p>`;
+
+  if (today.length > 0) {
+    el("today-content").innerHTML = head + `
+      <ul class="list">${today.map(p =>
+        `<li><span class="age-label">生誕${thisYear - p.y}年</span><span class="person">${p.name}</span>
+          <span class="work">${p.field} / ${p.y}年生まれ</span></li>`).join("")}</ul>`;
+    return;
+  }
+
+  // 今日が誕生日の人がいなければ、次に誕生日が来る人を出す
+  const myDoy = dayOfYear(m, d);
+  const next = FAMOUS_PEOPLE
+    .map(p => {
+      let gap = dayOfYear(p.m, p.d) - myDoy;
+      if (gap < 0) gap += 365;
+      return { p, gap };
+    })
+    .filter(x => x.gap > 0)
+    .sort((a, b) => a.gap - b.gap)
+    .slice(0, 3);
+  el("today-content").innerHTML = head.replace("、今日が誕生日なのはこの人たちです。", "。今日が誕生日の有名人はデータにいませんでした。") + `
+    <p class="subhead">次に誕生日が来る人</p>
+    <ul class="list">${next.map(({ p, gap }) =>
+      `<li><span class="age-label">あと${gap}日</span><span class="person">${p.name}</span>
+        <span class="work">${p.field} / ${p.m}月${p.d}日</span></li>`).join("")}</ul>`;
+}
+
 function renderClassmates(birth) {
   const myCohort = cohortYear(birth);
   const all = FAMOUS_PEOPLE.map(p => {
@@ -992,8 +1102,18 @@ window.addEventListener("afterprint", () => {
 });
 
 // 前回入力した生年月日を覚えておく
+el("people-bar").addEventListener("click", handlePeopleClick);
+renderPeopleBar();
+
+// ホーム画面に追加したときやオフラインでも開けるようにする
+// (index.htmlを直接ダブルクリックで開いた場合は動かないので、その時は何もしない)
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
+
 // 生年月日の読み込み。共有リンク(?b=1975-08-20)があればそちらを優先する
-const isISO = s => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
 const params = new URLSearchParams(location.search);
 const linkBirth = params.get("b");
 const linkOther = params.get("o");

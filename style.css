@@ -134,6 +134,52 @@ h1 { font-size: 1.9rem; margin-bottom: 6px; padding: 0 48px; }
   color: var(--accent);
 }
 
+/* 保存した人の切り替え */
+.people-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 14px;
+}
+.people-label { font-size: 0.8rem; color: var(--sub); }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  overflow: hidden;
+}
+.chip-main,
+.chip-del,
+.chip-add {
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+.chip-main { padding: 6px 4px 6px 14px; font-size: 0.9rem; }
+.chip-main:hover { color: var(--accent); }
+.chip-del {
+  padding: 6px 10px 6px 6px;
+  color: var(--sub);
+  font-size: 0.9rem;
+  line-height: 1;
+}
+.chip-del:hover { color: var(--error); }
+.chip-add {
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  border: 1px dashed var(--line);
+  border-radius: 999px;
+  color: var(--sub);
+}
+.chip-add:hover { color: var(--accent); border-color: var(--accent); }
+
 /* ===== タブ ===== */
 .tabs {
   position: sticky;
