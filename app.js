@@ -7,6 +7,7 @@ const LIFESPAN = 80; // 「人生◯年」として使う基準
 
 let lastResult = null; // 最後に計算した結果(シェア・くらべる機能で使う)
 let lastOther = null;  // 「くらべる」で入れた相手(見取り図に重ねて表示する)
+let fromSharedLink = false; // 共有リンク(?b=...)から開いたかどうか
 
 // ---------- 小さな道具たち ----------
 function el(id) { return document.getElementById(id); }
@@ -131,7 +132,8 @@ function run() {
   const now = new Date();
 
   hideError();
-  localStorage.setItem("birthdate", toISO(birth));
+  // 共有リンクから開いたときは、見た人自身の保存内容を上書きしない
+  if (!fromSharedLink) localStorage.setItem("birthdate", toISO(birth));
 
   const age = calcAge(birth, now);
   const daysLived = Math.floor((now - birth) / MS_PER_DAY);
@@ -828,22 +830,52 @@ function downloadShareImage() {
   shareStatus("画像を保存しました(ダウンロードフォルダをご確認ください)。");
 }
 
+// 文字をクリップボードにコピーする(古いブラウザ向けの代替つき)
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
 async function copyShareText() {
   if (!lastResult) { shareStatus("先に生年月日を入力してください。"); return; }
   const text = ["🕰️ 人生ものさし年表", ...buildShareLines().map(l => "・" + l)].join("\n");
-  try {
-    await navigator.clipboard.writeText(text);
-    shareStatus("コピーしました!そのままメールやSNSに貼り付けられます。");
-  } catch {
-    // クリップボードが使えない環境向けの代替(テキストを選択状態で表示)
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand("copy");
-    ta.remove();
-    shareStatus("コピーしました!");
-  }
+  shareStatus(await copyText(text)
+    ? "コピーしました!そのままメールやSNSに貼り付けられます。"
+    : "コピーできませんでした。");
+}
+
+// ---------- URLで共有 ----------
+
+// 生年月日(と、くらべた相手)を入れたURLを組み立てる
+function buildShareUrl() {
+  const url = new URL(location.href);
+  url.search = "";
+  url.hash = "";
+  url.searchParams.set("b", toISO(lastResult.birth));
+  if (lastOther) url.searchParams.set("o", toISO(lastOther));
+  return url.toString();
+}
+
+async function copyShareUrl() {
+  if (!lastResult) { shareStatus("先に生年月日を入力してください。"); return; }
+  const url = buildShareUrl();
+  shareStatus(await copyText(url)
+    ? "リンクをコピーしました。相手が開くと、同じ結果がそのまま表示されます。"
+    : `コピーできませんでした。このURLです: ${url}`);
 }
 
 // ---------- 起動 ----------
@@ -864,6 +896,7 @@ if (savedTheme === "dark" || savedTheme === "light") {
 updateThemeBtn();
 el("theme-btn").addEventListener("click", toggleTheme);
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateThemeBtn);
+el("share-url-btn").addEventListener("click", copyShareUrl);
 el("share-img-btn").addEventListener("click", downloadShareImage);
 el("share-copy-btn").addEventListener("click", copyShareText);
 el("print-btn").addEventListener("click", () => window.print());
@@ -880,8 +913,26 @@ window.addEventListener("afterprint", () => {
 });
 
 // 前回入力した生年月日を覚えておく
-const saved = localStorage.getItem("birthdate");
-if (saved && /^\d{4}-\d{2}-\d{2}$/.test(saved)) {
-  writeDateFields("birth", saved);
+// 生年月日の読み込み。共有リンク(?b=1975-08-20)があればそちらを優先する
+const isISO = s => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
+const params = new URLSearchParams(location.search);
+const linkBirth = params.get("b");
+const linkOther = params.get("o");
+
+if (isISO(linkBirth)) {
+  fromSharedLink = true;
+  writeDateFields("birth", linkBirth);
   run();
+  fromSharedLink = false;
+  // リンクに相手も入っていれば、そのまま比較まで表示する
+  if (isISO(linkOther) && lastResult) {
+    writeDateFields("other", linkOther);
+    runCompare();
+  }
+} else {
+  const saved = localStorage.getItem("birthdate");
+  if (isISO(saved)) {
+    writeDateFields("birth", saved);
+    run();
+  }
 }
