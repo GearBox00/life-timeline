@@ -438,6 +438,60 @@ details[open] summary { margin-bottom: 6px; }
   margin-top: 2px;
 }
 
+/* 家族年表(西暦で並べる) */
+.fy { padding-top: 4px; }
+.fy-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.fy-label {
+  flex: none;
+  width: 4.6em;
+  text-align: right;
+  font-size: 0.8rem;
+  color: var(--sub);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fy-lane { position: relative; flex: 1; height: 18px; }
+.fy-track {
+  position: absolute;
+  top: 0; bottom: 0;
+  background: var(--accent-soft);
+  border-radius: 9px;
+}
+.fy-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: var(--accent);
+  border-radius: inherit;
+}
+.fy-fill.other { background: var(--sub); }
+.fy-age {
+  position: absolute;
+  top: -1px;
+  font-size: 0.74rem;
+  color: var(--sub);
+  white-space: nowrap;
+}
+.fy-age.inside { transform: translateX(-100%); color: var(--card); }
+.fy-now {
+  position: absolute;
+  top: -3px; bottom: -3px;
+  width: 2px;
+  background: var(--ink);
+  opacity: 0.55;
+}
+.fy-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--sub);
+}
+
 /* シェア欄(どのタブでも表示) */
 .share-bar {
   max-width: 860px;
@@ -451,6 +505,7 @@ details[open] summary { margin-bottom: 6px; }
   font-weight: bold;
   margin-right: 6px;
 }
+.backup-bar { margin-top: 12px; }
 
 footer {
   max-width: 860px;

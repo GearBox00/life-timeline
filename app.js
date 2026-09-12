@@ -149,6 +149,7 @@ function loadPeople() {
 function storePeople(list) {
   localStorage.setItem("people", JSON.stringify(list));
   renderPeopleBar();
+  renderFamilyTimeline(); // 家族年表も描き直す
 }
 
 function renderPeopleBar() {
@@ -217,6 +218,7 @@ function run() {
 
   renderBasic(birth, now, age, daysLived, secondsLived);
   renderTimeline();
+  renderFamilyTimeline();
   renderBirthdayTwins(birth);
   renderTodaysBirthdays(birth, now);
   renderClassmates(birth);
@@ -224,6 +226,7 @@ function run() {
   renderSelfHistory(birth, now);
   renderLifeClock(birth, now);
   renderFuture(birth, now);
+  renderCelebrations(birth, now, age);
   renderRemaining(birth, now, age);
   renderHistory(age.y);
   renderCharacters(age.y);
@@ -273,6 +276,7 @@ function renderBasic(birth, now, age, daysLived, secondsLived) {
     <table class="plain">
       <tr><th>生まれた日</th><td>${fmtDate(birth)}(${wareki(birth)})</td></tr>
       <tr><th>干支</th><td>${eto(birth.getFullYear())}年</td></tr>
+      <tr><th>数え年</th><td>${now.getFullYear() - birth.getFullYear() + 1}歳 <span class="work">(生まれた年を1歳とし、お正月ごとに1つ足す数え方)</span></td></tr>
       <tr><th>生きた日数</th><td>${fmtNum(daysLived)} 日</td></tr>
       <tr><th>生きた時間</th><td>約 ${fmtNum(daysLived * 24)} 時間</td></tr>
       <tr><th>生きた秒数</th><td>約 ${fmtNum(secondsLived)} 秒</td></tr>
@@ -636,6 +640,53 @@ function renderFuture(birth, now) {
   el("future-content").innerHTML = `
     <p>これから起こる(と予想されている)出来事と、そのときのあなたの年齢です。</p>
     <table class="plain">${rows.join("")}</table>`;
+}
+
+// 長寿のお祝いと厄年
+function renderCelebrations(birth, now, age) {
+  const by = birth.getFullYear(), bm = birth.getMonth() + 1, bd = birth.getDate();
+  const thisYear = now.getFullYear();
+
+  // 長寿のお祝い(満年齢でその歳になる誕生日)
+  const longevity = [
+    { a: 60, n: "還暦(かんれき)", memo: "赤いちゃんちゃんこ。干支が一巡して生まれた年に還る" },
+    { a: 70, n: "古希(こき)", memo: "「人生七十、古来稀なり」から" },
+    { a: 77, n: "喜寿(きじゅ)", memo: "「喜」の草書体が七十七に見える" },
+    { a: 80, n: "傘寿(さんじゅ)", memo: "「傘」の略字が八十に見える" },
+    { a: 88, n: "米寿(べいじゅ)", memo: "「米」を分けると八十八" },
+    { a: 90, n: "卒寿(そつじゅ)", memo: "「卒」の略字が九十に見える" },
+    { a: 99, n: "白寿(はくじゅ)", memo: "「百」から一を引くと「白」" },
+    { a: 100, n: "百寿(ひゃくじゅ)", memo: "一世紀を生きたお祝い" },
+  ];
+  const rows = longevity.map(c => {
+    const y = by + c.a;
+    const remain = y - thisYear;
+    const when = age.y >= c.a ? "(済み🎉)" : remain === 0 ? "(今年!🎉)" : `(あと${remain}年)`;
+    return `<tr><th>${c.n}<br><span class="work">${c.a}歳</span></th><td>${y}年${bm}月${bd}日 ${when}<br><span class="work">${c.memo}</span></td></tr>`;
+  });
+
+  // 厄年(数え年で数える。本厄の前後1年が前厄・後厄)
+  const kazoe = thisYear - by + 1;
+  const yaku = { 男性: [25, 42, 61], 女性: [19, 33, 37, 61] };
+  const yakuRows = Object.entries(yaku).map(([sex, ages]) => {
+    const cells = ages.map(a => {
+      const y = by + a - 1; // 数え年a歳になる年
+      const state = y < thisYear ? "済み" : y === thisYear ? "今年!" : `${y - thisYear}年後`;
+      return `<span class="age-label">${a === 42 ? "大厄 " : a === 33 ? "大厄 " : ""}${a}歳</span>${y}年(${state})`;
+    }).join("<br>");
+    return `<tr><th>${sex}の本厄</th><td>${cells}</td></tr>`;
+  }).join("");
+
+  el("celebrations-content").innerHTML = `
+    <p class="subhead">長寿のお祝い</p>
+    <table class="plain">${rows.join("")}</table>
+    <p class="note">満年齢でその歳になる誕生日を示しています。地域や家によっては数え年で祝います。</p>
+    <details>
+      <summary>厄年を見る(気にしない方は開かなくて大丈夫です)</summary>
+      <p>厄年は<strong>数え年</strong>で数えます。あなたの今年の数え年は <strong>${kazoe}歳</strong> です。</p>
+      <table class="plain">${yakuRows}</table>
+      <p class="note">本厄の前の年が前厄、あとの年が後厄です。年齢や数え方は地域・寺社によって差があります。あくまで昔からの慣習で、科学的な根拠があるものではありません。</p>
+    </details>`;
 }
 
 function renderRemaining(birth, now, age) {
@@ -1134,4 +1185,158 @@ if (isISO(linkBirth)) {
     writeDateFields("birth", saved);
     run();
   }
+}
+
+// ---------- バックアップ(保存内容の書き出し・読み込み) ----------
+
+const BACKUP_KEYS = ["birthdate", "people", "activeTab", "theme"];
+
+function backupStatus(msg) { el("backup-status").textContent = msg; }
+
+function exportBackup() {
+  const data = { app: "jinsei-monosashi", version: 1, savedAt: new Date().toISOString(), items: {} };
+  for (const k of BACKUP_KEYS) {
+    const v = localStorage.getItem(k);
+    if (v !== null) data.items[k] = v;
+  }
+  if (Object.keys(data.items).length === 0) { backupStatus("まだ保存されているものがありません。"); return; }
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "monosashi-backup.json";
+  a.click();
+  URL.revokeObjectURL(url);
+  backupStatus("書き出しました。ファイルは大事に保管してください。");
+}
+
+// 取り込んでよい形かを1項目ずつ確かめる(壊れたファイルや他アプリのファイルを弾く)
+function sanitizeBackup(data) {
+  if (!data || data.app !== "jinsei-monosashi" || typeof data.items !== "object" || data.items === null) return null;
+  const src = data.items, items = {};
+  if (isISO(src.birthdate)) items.birthdate = src.birthdate;
+  if (typeof src.people === "string") {
+    try {
+      const p = JSON.parse(src.people);
+      if (Array.isArray(p)) {
+        const ok = p.filter(x => x && typeof x.n === "string" && isISO(x.d))
+                    .slice(0, MAX_PEOPLE)
+                    .map(x => ({ n: x.n.slice(0, 12), d: x.d }));
+        items.people = JSON.stringify(ok);
+      }
+    } catch { /* 壊れていれば people は取り込まない */ }
+  }
+  if (["me", "era", "compare", "scale", "future"].includes(src.activeTab)) items.activeTab = src.activeTab;
+  if (["light", "dark"].includes(src.theme)) items.theme = src.theme;
+  return items;
+}
+
+function importBackup(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    let data;
+    try { data = JSON.parse(reader.result); }
+    catch { backupStatus("読み込めませんでした。このアプリで書き出したファイルを選んでください。"); return; }
+
+    const items = sanitizeBackup(data);
+    if (!items) { backupStatus("このアプリのバックアップファイルではないようです。"); return; }
+    if (Object.keys(items).length === 0) { backupStatus("取り込める内容がありませんでした。"); return; }
+
+    const count = items.people ? JSON.parse(items.people).length : 0;
+    const summary = `生年月日: ${items.birthdate ? "あり" : "なし"} / 保存した人: ${count}人`;
+    if (!confirm(`バックアップを読み込みます。いまの保存内容は置き換わります。\n${summary}`)) return;
+
+    for (const k of BACKUP_KEYS) localStorage.removeItem(k);
+    for (const [k, v] of Object.entries(items)) localStorage.setItem(k, v);
+    location.reload();
+  };
+  reader.onerror = () => backupStatus("ファイルを開けませんでした。");
+  reader.readAsText(file);
+}
+
+el("backup-export-btn").addEventListener("click", exportBackup);
+el("backup-import-btn").addEventListener("click", () => el("backup-file").click());
+el("backup-file").addEventListener("change", e => {
+  const f = e.target.files && e.target.files[0];
+  if (f) importBackup(f);
+  e.target.value = ""; // 同じファイルをもう一度選べるようにする
+});
+
+// ---------- 家族年表(保存した人を西暦の軸で並べる) ----------
+
+function renderFamilyTimeline() {
+  const box = el("family-content");
+  if (!lastResult) return;
+  const { birth, now, age } = lastResult;
+  const myISO = toISO(birth);
+  const others = loadPeople().filter(p => p.d !== myISO);
+
+  if (others.length === 0) {
+    box.innerHTML = `<p class="note">上の「＋ いまの生年月日を保存」で家族や友だちを保存すると、
+      ここに全員の人生が西暦で並んで表示されます。誰が何歳のときに誰が生まれたか、が一目で分かります。</p>`;
+    return;
+  }
+
+  const rows = [{ n: "あなた", birth, me: true }]
+    .concat(others.map(p => ({ n: p.n, birth: new Date(p.d + "T00:00:00"), me: false })))
+    .sort((a, b) => a.birth - b.birth);
+
+  // 軸の範囲: いちばん早い誕生から、いちばん遅い人の80歳まで(区切りのよい年に丸める)
+  const yearOf = d => d.getFullYear() + (d.getMonth() * 30 + d.getDate()) / 365;
+  const minY = Math.min(...rows.map(r => yearOf(r.birth)));
+  const maxY = Math.max(...rows.map(r => yearOf(r.birth))) + LIFESPAN;
+  const step = (maxY - minY) > 120 ? 20 : 10;
+  const axisStart = Math.floor(minY / step) * step;
+  const axisEnd = Math.ceil(maxY / step) * step;
+  const span = axisEnd - axisStart;
+  const pct = y => ((y - axisStart) / span) * 100;
+  const nowY = yearOf(now);
+
+  const html = rows.map(r => {
+    const b = yearOf(r.birth);
+    const left = pct(b);
+    const width = pct(Math.min(b + LIFESPAN, axisEnd)) - left;
+    const lived = Math.min(nowY - b, LIFESPAN);
+    const fill = (lived / Math.min(LIFESPAN, axisEnd - b)) * 100;
+    const yrs = calcAge(r.birth, now).y;
+    const inside = fill > 80;
+    return `
+      <div class="fy-row">
+        <div class="fy-label" title="${escapeHtml(r.n)}">${escapeHtml(r.n)}</div>
+        <div class="fy-lane">
+          <div class="fy-track" style="left:${left.toFixed(2)}%;width:${width.toFixed(2)}%">
+            <div class="fy-fill${r.me ? "" : " other"}" style="width:${fill.toFixed(2)}%"></div>
+            <span class="fy-age${inside ? " inside" : ""}" style="left:${inside ? fill.toFixed(2) + "%" : "calc(" + fill.toFixed(2) + "% + 5px)"}">${yrs}歳</span>
+          </div>
+          <div class="fy-now" style="left:${pct(nowY).toFixed(2)}%"></div>
+        </div>
+      </div>`;
+  }).join("");
+
+  const ticks = [];
+  for (let y = axisStart; y <= axisEnd; y += step) ticks.push(`<span>${y}</span>`);
+
+  // 「相手が今のあなたの年齢だったとき、あなたは何歳だったか」
+  const cross = others.map(p => {
+    const ob = new Date(p.d + "T00:00:00");
+    const at = new Date(ob.getTime() + (now - birth)); // 相手が今のあなたの年齢になる(なった)日
+    let mine;
+    if (at < birth) {
+      mine = `あなたが生まれる${Math.max(1, Math.round((birth - at) / (MS_PER_DAY * 365.25)))}年ほど前`;
+    } else {
+      mine = `あなたは${calcAge(birth, at).y}歳${at > now ? "になっている" : "だった"}`;
+    }
+    const verb = at > now ? "になる年" : "だった年";
+    return `<li><span class="person">${escapeHtml(p.n)}</span>が今のあなた(${age.y}歳)${verb}: ${at.getFullYear()}年 <span class="work">— ${mine}</span></li>`;
+  }).join("");
+
+  box.innerHTML = `
+    <div class="fy">
+      ${html}
+      <div class="fy-row"><div class="fy-label"></div><div class="fy-scale">${ticks.join("")}</div></div>
+    </div>
+    <p class="note">薄い帯は80歳まで、濃い帯はこれまでに生きた分。縦の線が「今」です。</p>
+    <p class="subhead">重なりを見る</p>
+    <ul class="list">${cross}</ul>`;
 }

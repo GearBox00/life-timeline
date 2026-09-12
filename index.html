@@ -50,6 +50,11 @@
       <div class="content" id="timeline-content"></div>
     </section>
 
+    <section class="card" id="sec-family">
+      <h2>👨‍👩‍👧 家族年表 <span class="tag">保存した人を西暦で並べる</span></h2>
+      <div class="content" id="family-content"></div>
+    </section>
+
     <section class="card" id="sec-basic">
       <h2>📋 基本データ</h2>
       <div class="content" id="basic-content"></div>
@@ -182,6 +187,11 @@
       <div class="content" id="future-content"></div>
     </section>
 
+    <section class="card" id="sec-celebrations">
+      <h2>🎍 節目の年 <span class="tag">長寿のお祝い・厄年</span></h2>
+      <div class="content" id="celebrations-content"></div>
+    </section>
+
     <section class="card" id="sec-remaining">
       <h2>🌸 あと何回カレンダー <span class="tag">人生80年として</span></h2>
       <div class="content" id="remaining-content"></div>
@@ -202,6 +212,17 @@
   </div>
   <p id="share-status" class="note"></p>
   <p class="note">「リンクをコピー」で作ったURLには生年月日が入ります。送る相手にはご注意ください。</p>
+</div>
+
+<!-- バックアップ(まだ何も保存していない端末でも読み込めるよう、常に表示) -->
+<div id="backup-bar" class="share-bar backup-bar">
+  <div class="btn-row">
+    <span class="share-label">💾 バックアップ</span>
+    <button id="backup-export-btn" class="sub-btn">保存内容を書き出す</button>
+    <button id="backup-import-btn" class="sub-btn">ファイルから読み込む</button>
+    <input type="file" id="backup-file" accept=".json,application/json" hidden>
+  </div>
+  <p id="backup-status" class="note">生年月日・保存した人・表示の設定をファイルに残せます。機種変更やブラウザの初期化に備えて。</p>
 </div>
 
 <footer>
